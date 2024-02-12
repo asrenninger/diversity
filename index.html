@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Mapbox GL JS Map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>    
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .map-overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            margin-left: 20px;
+            font-family: Arial, sans-serif;
+            overflow: auto;
+            border-radius: 3px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 1;
+            display: flex; /* Use flexbox to help with the layout */
+            flex-direction: column; /* Stack children vertically */
+            align-items: center; /* Center children horizontally */
+            max-width: 300px; /* Adjust as necessary */
+        }
+        #description img {
+            max-width: 100%; /* Make the image responsive */
+            height: auto; /* Maintain aspect ratio */
+            margin-top: 20px; /* Add some space between the text and the image */
+        }
+    </style>
+</head>
+<body>
+    <div id="map">
+        <!-- Your Mapbox Map will be here -->
+        <div class='map-overlay' id='description'>
+            <h2>What is this map?</h2>
+            <div id='desc'>
+                <p>
+                    The colors here represent the degree to which visitors to a businesses in a neighborhood are diverse and the degree to which residents from that neighborhood experience diversity in day-to-day life. We call these place segregation (in) and neighborhood isolation (out), and they are both scaled from 0-1, with 0 being perfect integration (encounters with all economic classes in equal proportion) and 1 being perfect segregation (all encounters with a single class). Place segregation and neighborhood isolation are related but distinct: in many parts of America, residents can seek out homogeneous amenities despite heterogenous visitors to their neighborhood; in others, residents travel to diverse amenities even though those nearby are not diverse. 
+                </p>
+            </div>
+                <img src="https://github.com/asrenninger/networks/blob/master/viz/legend.png?raw=true" alt="description">
+            <div id='desc'>
+                <p>
+                    In this legend, a high in-isolation corresponds to less diverse encounters on trips to amenities and busineses by residents of a Census block group and a high out-segregation corresponds to less diverse visitors to a block group. 
+                </p>
+            </div>
+        </div>
+    </div>
+<script>
+    // Function to format the tooltip content
+    // function formatTooltipContent(properties) {
+    //     // Define a mapping from your data's property names to user-friendly names
+    //     const nameMappings = {
+    //         'div_income': 'Place segregation (income)',
+    //         'div_nonwhite': 'Place segregation (race)',
+    //         'exp_income': 'Neighborhood Isolation (income)',
+    //         'exp_nonwhite': 'Neighborhood isolation (race)',
+    //         'visits': 'Visits',
+    //         'trips': 'Trips'
+    //     };
+
+    //     // Start building the content string, using 'tract_name' for the header
+    //     let content = `<strong>${properties['tract_name']}</strong><br>`; // Header with the census block group name
+
+    //     // Loop through the specific keys you want to display in the tooltip
+    //     const keysToShow = ['div_income', 'div_nonwhite', 'exp_income', 'exp_nonwhite', 'visits', 'trips'];
+    //     keysToShow.forEach(key => {
+    //         const displayName = nameMappings[key]; // Get the user-friendly name
+    //         const value = properties[key]; // Get the value from the properties
+    //         content += `${displayName}: ${value}<br>`; // Add the key-value pair to the content string
+    //     });
+
+    //     return content;
+    // }
+    // Function to format the tooltip content with structured layout
+    function formatTooltipContent(properties) {
+        // Start building the content string with the tract name as a bold header
+        let content = `<div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">${properties['tract_name']}</div>`;
+
+        // Add structured data for Place Segregation
+        content += `<div style="margin-bottom: 5px;"><strong>Place Segregation (in)</strong><br>`;
+        content += `Income: ${properties['div_income']}<br>`;
+        content += `Nonwhite: ${properties['div_nonwhite']}</div>`;
+
+        // Add structured data for Neighborhood Isolation
+        content += `<div style="margin-bottom: 5px;"><strong>Neighborhood Isolation (out)</strong><br>`;
+        content += `Income: ${properties['exp_income']}<br>`;
+        content += `Nonwhite: ${properties['exp_nonwhite']}</div>`;
+
+        // Add data for Trips and Visits
+        content += `<div>Trips: ${properties['trips']}<br>`;
+        content += `Visits: ${properties['visits']}</div>`;
+
+        return content;
+    }
+
+
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXNyZW5uaW5nZXIiLCJhIjoiY2szMGV1OG9jMDM4aTNkbnphNXpzcm1wYyJ9.UnnfQkiXT3y4ALqIjzHnNw'; // Replace with your Mapbox access token
+    var map = new mapboxgl.Map({
+        container: 'map', // container id
+        style: 'mapbox://styles/mapbox/dark-v11', // style URL
+        center: [-74.006, 40.7128], // starting position [longitude, latitude]
+        zoom: 9, // starting zoom
+        minZoom: 5,
+        maxBounds: [[-128.76307, 22.52310], [-64.94989, 51.38436]],
+        projection: 'mercator'
+    });
+
+    // Create a new div element for the tooltip and add it to the map container
+    var tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = 'white';
+    tooltip.style.padding = '10px';
+    tooltip.style.borderRadius = '5px';
+    tooltip.style.display = 'none'; // Hide the tooltip by default
+    tooltip.style.pointerEvents = 'none'; // Ensure the tooltip doesn't interfere with map interaction
+    map.getContainer().appendChild(tooltip);
+
+
+    map.on('load', function() {
+            // Define the source if not already defined in your style
+            map.addSource('county-data', {
+                type: 'vector',
+                url: 'mapbox://asrenninger.0cw4bbrf'
+            });
+            map.addSource('cbg-data', {
+                type: 'vector',
+                url: 'mapbox://asrenninger.8vjuuqkq'
+            });
+
+            // Example for adding a county-level layer with categorical colors
+            map.addLayer({
+                'id': 'counties',
+                'type': 'fill',
+                'source': 'county-data', // Make sure this points to your actual data source
+                'source-layer': 'county_class-8mlyco',
+                'layout': {},
+                'paint': {
+                    'fill-color': [
+                        'match',
+                        ['get', 'class'], // Replace 'class' with the name of the property that holds the class value
+                        '1-1', '#FEFFFF',
+                        '2-1', '#FEEBFC',
+                        '3-1', '#FCD8F8',
+                        '1-2', '#D6F5FF',
+                        '2-2', '#D6E1FC',
+                        '3-2', '#D3CEF8',
+                        '1-3', '#8AECFF',
+                        '2-3', '#8AD8FC',
+                        '3-3', '#87C4F8',
+                        '#acacac' // Default color for classes that don't match or undefined classes
+                    ],
+                    'fill-outline-color': '#ffffff', // Optionally set an outline color
+                    'fill-opacity': 0.75 // Adjust opacity as needed
+                }
+            });
+            // Repeat a similar setup for the CBG-level layer, if applicable
+            map.addLayer({
+                'id': 'cbgs',
+                'type': 'fill',
+                'source': 'cbg-data', // Make sure this points to your actual data source
+                'source-layer': 'cbg_class-4bug3v',
+                'layout': {},
+                'paint': {
+                    'fill-color': [
+                        'match',
+                        ['get', 'class'], // Replace 'class' with the name of the property that holds the class value
+                        '1-1', '#FEFFFF',
+                        '2-1', '#FEEBFC',
+                        '3-1', '#FCD8F8',
+                        '1-2', '#D6F5FF',
+                        '2-2', '#D6E1FC',
+                        '3-2', '#D3CEF8',
+                        '1-3', '#8AECFF',
+                        '2-3', '#8AD8FC',
+                        '3-3', '#87C4F8',
+                        '#acacac' // Default color for classes that don't match or undefined classes
+                    ],
+                    'fill-outline-color': '#ffffff', // Optionally set an outline color
+                    'fill-opacity': 0.75 // Adjust opacity as needed
+                }
+            });
+
+            // Update layer visibility based on zoom level
+            map.on('zoom', function() {
+                if (map.getZoom() > 8) {
+                    map.setLayoutProperty('counties', 'visibility', 'none');
+                    map.setLayoutProperty('cbgs', 'visibility', 'visible');
+                } else {
+                    map.setLayoutProperty('counties', 'visibility', 'visible');
+                    map.setLayoutProperty('cbgs', 'visibility', 'none');
+                }
+            });
+    });
+
+    // Add a 'click' event listener to the map
+    map.on('click', 'cbgs', function(e) {
+        // Check if the click event features at least one feature in your layer
+        if (e.features.length > 0) {
+            var feature = e.features[0];
+            // Format the tooltip content using properties of the clicked feature
+            tooltip.innerHTML = formatTooltipContent(feature.properties);
+            // Position the tooltip at the click location
+            tooltip.style.left = e.point.x + 'px';
+            tooltip.style.top = e.point.y + 'px';
+            // Show the tooltip
+            tooltip.style.display = 'block';
+        }
+    });
+
+    // Optionally, add a 'click' event listener to the map to hide the tooltip when clicking outside the features
+    map.on('click', function(e) {
+        // Perform a query to check if any feature in your layer exists at the click location
+        var features = map.queryRenderedFeatures(e.point, { layers: ['cbgs'] });
+        // If no features found, hide the tooltip
+        if (!features.length) {
+            tooltip.style.display = 'none';
+        }
+    });
+
+    // Prevent the map from panning when clicking on the tooltip (optional)
+    tooltip.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+</script>
+</body>
+</html>
