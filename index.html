@@ -2,8 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Mapbox GL JS Map</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Diversity + Exposure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" /> -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>    
     <style>
@@ -16,37 +17,43 @@
             background: rgba(255, 255, 255, 0.8);
             margin-left: 20px;
             font-family: Arial, sans-serif;
-            overflow: auto;
+            overflow-y: auto; /* Enable vertical scrolling only */
             border-radius: 3px;
             padding: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             z-index: 1;
-            display: flex; /* Use flexbox to help with the layout */
-            flex-direction: column; /* Stack children vertically */
-            align-items: center; /* Center children horizontally */
-            max-width: 300px; /* Adjust as necessary */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 300px; 
+            max-height: 70vh; /* Example: max height of 70% of the viewport */ 
         }
+
         #description img {
-            max-width: 100%; /* Make the image responsive */
-            height: auto; /* Maintain aspect ratio */
-            margin-top: 20px; /* Add some space between the text and the image */
+            max-width: 100%; 
+            height: auto; 
+            margin-top: 0px; 
         }
+        p { 
+        margin-top: 2px; 
+        margin-bottom: 5px; /* Add a bit of bottom margin for readability */
+        } 
+        
     </style>
 </head>
 <body>
     <div id="map">
         <!-- Your Mapbox Map will be here -->
         <div class='map-overlay' id='description'>
-            <h2>What is this map?</h2>
             <div id='desc'>
                 <p>
-                    The colors here represent the degree to which visitors to a businesses in a neighborhood are diverse and the degree to which residents from that neighborhood experience diversity in day-to-day life. We call these place segregation (in) and neighborhood isolation (out), and they are both scaled from 0-1, with 0 being perfect integration (encounters with all economic classes in equal proportion) and 1 being perfect segregation (all encounters with a single class). Place segregation and neighborhood isolation are related but distinct: in many parts of America, residents can seek out homogeneous amenities despite heterogenous visitors to their neighborhood; in others, residents travel to diverse amenities even though those nearby are not diverse. 
+                    <b>What is this map?</b> The colors here represent the degree to which visitors to a businesses in a neighborhood are diverse and the degree to which residents from that neighborhood experience diversity in day-to-day life. We call these place segregation (in) and neighborhood isolation (out), and they are both scaled from 0-1, with 0 being perfect integration (encounters with all economic classes in equal proportion) and 1 being perfect segregation (all encounters with a single class). Place segregation and neighborhood isolation are related but distinct: in many parts of America, residents can seek out homogeneous amenities despite heterogenous visitors to their neighborhood; in others, residents travel to diverse amenities even though those nearby are not diverse. 
                 </p>
             </div>
                 <img src="https://github.com/asrenninger/networks/blob/master/viz/legend.png?raw=true" alt="description">
             <div id='desc'>
                 <p>
-                    In this legend, a high in-isolation corresponds to less diverse encounters on trips to amenities and busineses by residents of a Census block group and a high out-segregation corresponds to less diverse visitors to a block group. 
+                    A high in-isolation corresponds to less diverse encounters on trips to amenities and busineses by residents of a Census block group and a high out-segregation corresponds to less diverse visitors to a block group. 
                 </p>
             </div>
         </div>
